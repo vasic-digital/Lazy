@@ -1,8 +1,8 @@
 # Examples
 
-## Lazy Configuration Loading
+## Lazy Configuration from File
 
-Defer configuration loading until first access, useful for libraries that may not need all config:
+Load configuration from disk only when first needed:
 
 ```go
 package main
@@ -15,115 +15,91 @@ import (
     "digital.vasic.lazy/pkg/lazy"
 )
 
-type DatabaseConfig struct {
-    Host     string `json:"host"`
+type AppConfig struct {
     Port     int    `json:"port"`
-    Database string `json:"database"`
+    LogLevel string `json:"log_level"`
 }
 
-func main() {
-    dbConfig := lazy.NewValue(func() (*DatabaseConfig, error) {
-        data, err := os.ReadFile("database.json")
-        if err != nil {
-            return nil, err
-        }
-        var cfg DatabaseConfig
-        err = json.Unmarshal(data, &cfg)
-        return &cfg, err
-    })
-
-    // Config is only loaded if this code path is reached
-    if needsDatabase() {
-        cfg, err := dbConfig.Get()
-        if err != nil {
-            panic(err)
-        }
-        fmt.Printf("Connecting to %s:%d\n", cfg.Host, cfg.Port)
+var config = lazy.NewValue(func() (*AppConfig, error) {
+    data, err := os.ReadFile("config.json")
+    if err != nil {
+        return nil, fmt.Errorf("reading config: %w", err)
     }
-}
-```
-
-## Lazy Singleton Services
-
-Initialize expensive services (HTTP clients, connection pools) only when needed:
-
-```go
-package main
-
-import (
-    "fmt"
-    "net/http"
-    "time"
-
-    "digital.vasic.lazy/pkg/lazy"
-)
-
-var httpClient = lazy.NewService(func() (*http.Client, error) {
-    return &http.Client{
-        Timeout: 30 * time.Second,
-        Transport: &http.Transport{
-            MaxIdleConns:    100,
-            IdleConnTimeout: 90 * time.Second,
-        },
-    }, nil
+    var cfg AppConfig
+    if err := json.Unmarshal(data, &cfg); err != nil {
+        return nil, fmt.Errorf("parsing config: %w", err)
+    }
+    return &cfg, nil
 })
 
-func fetchData(url string) ([]byte, error) {
-    client, err := httpClient.Get()
-    if err != nil {
-        return nil, err
-    }
-    resp, err := client.Get(url)
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-
-    // Read and return body...
-    return nil, nil
-}
-
 func main() {
-    fmt.Println("Client initialized:", httpClient.Initialized()) // false
-    fetchData("https://example.com")
-    fmt.Println("Client initialized:", httpClient.Initialized()) // true
+    cfg, err := config.Get()
+    if err != nil {
+        fmt.Printf("Config error: %v\n", err)
+        return
+    }
+    fmt.Printf("Server port: %d, log level: %s\n", cfg.Port, cfg.LogLevel)
 }
 ```
 
 ## Concurrent Access Safety
 
-Multiple goroutines can safely call Get() -- the loader executes exactly once:
+Multiple goroutines can safely access a lazy value simultaneously:
 
 ```go
-package main
-
 import (
-    "fmt"
     "sync"
-    "sync/atomic"
-
     "digital.vasic.lazy/pkg/lazy"
 )
 
-func main() {
-    var callCount atomic.Int64
+callCount := 0
+val := lazy.NewValue(func() (int, error) {
+    callCount++
+    return 42, nil
+})
 
-    value := lazy.NewValue(func() (string, error) {
-        callCount.Add(1)
-        return "initialized", nil
-    })
+var wg sync.WaitGroup
+for i := 0; i < 100; i++ {
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        result, _ := val.Get()
+        fmt.Println(result) // always 42
+    }()
+}
+wg.Wait()
 
-    var wg sync.WaitGroup
-    for i := 0; i < 100; i++ {
-        wg.Add(1)
-        go func() {
-            defer wg.Done()
-            v, _ := value.Get()
-            _ = v
-        }()
+fmt.Println(callCount) // 1 (loader ran exactly once)
+```
+
+## Lazy Service Registry
+
+Build a service registry where each service initializes on first access:
+
+```go
+import "digital.vasic.lazy/pkg/lazy"
+
+type ServiceRegistry struct {
+    db    *lazy.Service[*Database]
+    cache *lazy.Service[*Cache]
+}
+
+func NewRegistry() *ServiceRegistry {
+    return &ServiceRegistry{
+        db: lazy.NewService(func() (*Database, error) {
+            return ConnectDB("localhost:5432")
+        }),
+        cache: lazy.NewService(func() (*Cache, error) {
+            return ConnectCache("localhost:6379")
+        }),
     }
-    wg.Wait()
+}
 
-    fmt.Printf("Loader called %d time(s)\n", callCount.Load()) // 1
+func (r *ServiceRegistry) DB() (*Database, error) {
+    return r.db.Get()
+}
+
+func (r *ServiceRegistry) Cache() (*Cache, error) {
+    return r.cache.Get()
 }
 ```

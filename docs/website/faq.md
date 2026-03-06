@@ -1,17 +1,21 @@
 # FAQ
 
-## What is the difference between Value[T] and Service[T]?
+## Is the lazy value thread-safe?
 
-`Value[T]` supports `Reset()` for scenarios where a cached value must be invalidated (e.g., configuration reload). `Service[T]` omits `Reset()` because services are typically initialized once for the lifetime of the process and should not be re-created. Both use `sync.Once` for thread-safe initialization.
-
-## Is the lazy initialization thread-safe?
-
-Yes. Both `Value[T]` and `Service[T]` use `sync.Once` internally, which guarantees the loader function executes at most once regardless of how many goroutines call `Get()` concurrently. All goroutines that call `Get()` while initialization is in progress will block until it completes and then receive the same cached result.
+Yes. Both `Value[T]` and `Service[T]` use `sync.Once` internally, which guarantees that the loader/init function runs exactly once even when called concurrently from multiple goroutines. All subsequent calls return the cached result.
 
 ## What happens if the loader function returns an error?
 
-If the loader returns an error, `Get()` returns the zero value of `T` along with the error. The error is cached -- subsequent `Get()` calls return the same error without re-running the loader. For `Value[T]`, you can call `Reset()` and then `Get()` to retry. `MustGet()` panics if the loader returns an error.
+The error is cached along with the zero value. All subsequent calls to `Get()` return the same error without re-running the loader. Use `Reset()` to clear the cached error and allow the loader to run again.
 
-## Does this module have any external dependencies?
+## When should I use Value vs Service?
 
-No. The module depends solely on the Go standard library (`sync` package). There are no external runtime dependencies.
+Use `Value[T]` for lazily computing data values (configuration, computed results, parsed files). Use `Service[T]` for lazily initializing service objects (database connections, HTTP clients). `Service[T]` adds the `Initialized()` method for checking initialization status.
+
+## Can I force the loader to run again?
+
+Yes, but only for `Value[T]`. Call `val.Reset()` to clear the `sync.Once`, which allows the loader to run on the next `Get()` call. `Service[T]` does not expose a Reset method because service reinitialization typically requires cleanup of the previous instance.
+
+## Does MustGet recover from panics?
+
+No. `MustGet()` intentionally panics if the loader returns an error. Use it only for values that are truly required and whose absence means the program cannot function. For optional values, use `Get()` and handle the error explicitly.

@@ -1,20 +1,27 @@
 # Lazy Module
 
-`digital.vasic.lazy` provides generic lazy-loading primitives for Go. It defers expensive initialization until first access, guaranteeing that the loader runs exactly once even under concurrent access. The module uses Go generics so it works with any type without casting.
+`digital.vasic.lazy` is a standalone Go module providing generic lazy-loading primitives using `sync.Once`. It offers `Value[T]` for deferred value computation and `Service[T]` for one-time service initialization, both safe for concurrent use.
 
 ## Key Features
 
-- **Value[T]** -- Generic lazy value with `Get()`, `MustGet()`, and `Reset()` for resettable caching
-- **Service[T]** -- Generic lazy service initialization with `Get()` and `Initialized()` status check
-- **Thread-safe** -- Uses `sync.Once` internally for goroutine-safe initialization
-- **Zero dependencies** -- No external dependencies beyond the Go standard library
-- **Minimal API** -- Two types, five methods total
+- **Lazy value loading** -- `Value[T]` calls a loader function at most once on first access, caching the result for subsequent calls
+- **Lazy service initialization** -- `Service[T]` wraps one-time service setup with error handling
+- **Generic types** -- Uses Go generics (`any` constraint) for type-safe lazy loading of any type
+- **Thread safety** -- Built on `sync.Once` for safe concurrent access without explicit locking
+- **Reset support** -- `Value[T].Reset()` clears the cached value so the loader runs again on next access
+- **Panic on error** -- `Value[T].MustGet()` provides a convenience accessor that panics on loader failure
 
-## Package Overview
+## API Overview
 
-| Package | Purpose |
-|---------|---------|
-| `pkg/lazy` | Generic `Value[T]` and `Service[T]` types for lazy initialization |
+| Type | Method | Description |
+|------|--------|-------------|
+| `Value[T]` | `NewValue(loader)` | Create a lazy value with a loader function |
+| `Value[T]` | `Get() (T, error)` | Load and return the value (loader runs once) |
+| `Value[T]` | `MustGet() T` | Load and return the value, panicking on error |
+| `Value[T]` | `Reset()` | Clear cached value; loader will run again |
+| `Service[T]` | `NewService(init)` | Create a lazy service with an init function |
+| `Service[T]` | `Get() (T, error)` | Initialize and return the service (init runs once) |
+| `Service[T]` | `Initialized() bool` | Check if the service initialized without error |
 
 ## Installation
 
@@ -22,19 +29,4 @@
 go get digital.vasic.lazy
 ```
 
-Requires Go 1.24 or later.
-
-## Quick Example
-
-```go
-import "digital.vasic.lazy/pkg/lazy"
-
-// Lazy database connection -- opened only when first queried
-db := lazy.NewValue(func() (*sql.DB, error) {
-    return sql.Open("sqlite3", "app.db")
-})
-
-conn, err := db.Get()  // Connection opens here
-conn2, _ := db.Get()   // Returns the same connection
-fmt.Println(conn == conn2) // true
-```
+Requires Go 1.21 or later (generics support). Only external dependency is `testify` for tests.
