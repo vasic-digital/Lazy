@@ -14,6 +14,7 @@ import (
 // Value lazily loads a value of type T on first access via Get().
 // The loader function is called at most once, even under concurrent access.
 type Value[T any] struct {
+	mu     sync.Mutex
 	once   sync.Once
 	value  T
 	err    error
@@ -29,6 +30,8 @@ func NewValue[T any](loader func() (T, error)) *Value[T] {
 
 // Get returns the lazily-loaded value. The loader is called at most once.
 func (v *Value[T]) Get() (T, error) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 	v.once.Do(func() {
 		v.value, v.err = v.loader()
 	})
@@ -45,12 +48,19 @@ func (v *Value[T]) MustGet() T {
 }
 
 // Reset clears the cached value so the loader will run again on next Get().
+// Safe for concurrent use with Get().
 func (v *Value[T]) Reset() {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 	v.once = sync.Once{}
+	var zero T
+	v.value = zero
+	v.err = nil
 }
 
 // Service lazily initializes a service of type T exactly once.
 type Service[T any] struct {
+	mu      sync.Mutex
 	once    sync.Once
 	service T
 	initErr error
@@ -66,6 +76,8 @@ func NewService[T any](init func() (T, error)) *Service[T] {
 
 // Get returns the lazily-initialized service.
 func (s *Service[T]) Get() (T, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.once.Do(func() {
 		s.service, s.initErr = s.init()
 	})
@@ -74,5 +86,7 @@ func (s *Service[T]) Get() (T, error) {
 
 // Initialized returns true if the service was initialized without error.
 func (s *Service[T]) Initialized() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.initErr == nil
 }
