@@ -39,6 +39,9 @@ func (v *Value[T]) Get() (T, error) {
 }
 
 // MustGet returns the lazily-loaded value, panicking on error.
+// This follows the Go "Must" convention (see template.Must, regexp.MustCompile).
+// Use Get() instead in request handlers or goroutines where panics would
+// crash the server — MustGet is intended for package-level initialisation only.
 func (v *Value[T]) MustGet() T {
 	val, err := v.Get()
 	if err != nil {
