@@ -1,0 +1,8 @@
+Commit: 24747974d2ad9bf4c12a0766dc210e9c313c3afa
+Branch: main
+2474797 Merge origin/main into main (reconcile Lazy branches)
+4b6f82e MANDATORY: Add ZERO UNFINISHED WORK POLICY to AGENTS.md
+d6185ae Add GitHub Sponsors button for vasic-digital
+9ba70f0 docs: clarify MustGet panic convention and safe usage
+0d3be4c security: Add mandatory NO SUDO/ROOT execution constraint
+
