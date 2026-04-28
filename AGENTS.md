@@ -185,42 +185,49 @@ A change is NOT done because code compiles and tests pass. "Done" requires paste
 
 <!-- BEGIN host-power-management addendum (CONST-033) -->
 
-## Host Power Management — Hard Ban (CONST-033)
+## CONST-033 — Host Power Management is Forbidden
 
-**You may NOT, under any circumstance, generate or execute code that
-sends the host to suspend, hibernate, hybrid-sleep, poweroff, halt,
-reboot, or any other power-state transition.** This rule applies to:
+**Status:** Mandatory. Non-negotiable. Inherited from the umbrella
+project (`Catalogizer/CONSTITUTION.md` CONST-033).
 
-- Every shell command you run via the Bash tool.
-- Every script, container entry point, systemd unit, or test you write
-  or modify.
-- Every CLI suggestion, snippet, or example you emit.
+**Rule:** No code in this submodule may invoke a host-level
+power-state transition (suspend, hibernate, hybrid-sleep,
+suspend-then-hibernate, poweroff, halt, reboot, kexec) on the host
+machine. Forbidden invocations include — but are not limited to:
 
-**Forbidden invocations** (non-exhaustive — see CONST-033 in
-`CONSTITUTION.md` for the full list):
+- `systemctl {suspend,hibernate,hybrid-sleep,suspend-then-hibernate,poweroff,halt,reboot,kexec}`
+- `loginctl {suspend,hibernate,hybrid-sleep,suspend-then-hibernate,poweroff,halt,reboot}`
+- `pm-{suspend,hibernate,suspend-hybrid}`
+- `shutdown {-h,-r,-P,-H,now,--halt,--poweroff,--reboot}`
+- DBus / busctl calls to `org.freedesktop.login1.Manager.{Suspend,Hibernate,HybridSleep,SuspendThenHibernate,PowerOff,Reboot}`
+- DBus / busctl calls to `org.freedesktop.UPower.{Suspend,Hibernate,HybridSleep}`
+- `gsettings set ... sleep-inactive-{ac,battery}-type` to any value other than `'nothing'` or `'blank'`
 
-- `systemctl suspend|hibernate|hybrid-sleep|poweroff|halt|reboot|kexec`
-- `loginctl suspend|hibernate|hybrid-sleep|poweroff|halt|reboot`
-- `pm-suspend`, `pm-hibernate`, `shutdown -h|-r|-P|now`
-- `dbus-send` / `busctl` calls to `org.freedesktop.login1.Manager.Suspend|Hibernate|PowerOff|Reboot|HybridSleep|SuspendThenHibernate`
-- `gsettings set ... sleep-inactive-{ac,battery}-type` to anything but `'nothing'` or `'blank'`
+**Why:** The host runs mission-critical parallel CLI-agent and
+container workloads. On 2026-04-26 18:23:43 the host was auto-suspended
+mid-session, killing HelixAgent + 41 dependent services. On 2026-04-28
+18:36:35 the user-slice was SIGKILLed under cumulative cgroup pressure
+(see `docs/incidents/` in the umbrella). Both classes of event are
+session-loss; both are now defended in depth.
 
-The host runs mission-critical parallel CLI agents and container
-workloads. Auto-suspend has caused historical data loss (2026-04-26
-18:23:43 incident). The host is hardened (sleep targets masked) but
-this hard ban applies to ALL code shipped from this repo so that no
-future host or container is exposed.
+**Defence in depth (umbrella project artifacts):**
 
-**Defence:** every project ships
-`scripts/host-power-management/check-no-suspend-calls.sh` (static
-scanner) and
-`challenges/scripts/no_suspend_calls_challenge.sh` (challenge wrapper).
-Both MUST be wired into the project's CI / `run_all_challenges.sh`.
+1. `scripts/host-power-management/install-host-suspend-guard.sh`
+2. `scripts/host-power-management/user_session_no_suspend_bootstrap.sh`
+3. `scripts/host-power-management/check-no-suspend-calls.sh`
+4. `challenges/scripts/host_no_auto_suspend_challenge.sh`
+5. `challenges/scripts/no_suspend_calls_challenge.sh`
 
-**Full background:** `docs/HOST_POWER_MANAGEMENT.md` and `CONSTITUTION.md` (CONST-033).
+**Enforcement:** the umbrella project's CI / `run_all_challenges.sh`
+runs both challenges (host state + source tree). A violation in
+either channel blocks merge. Adding files to the scanner's
+`EXCLUDE_PATHS` requires an explicit justification comment
+identifying the non-host context.
+
+**Cross-references:** umbrella `docs/HOST_POWER_MANAGEMENT.md`,
+umbrella `CONSTITUTION.md` CONST-033 + Article X (no-sudo).
 
 <!-- END host-power-management addendum (CONST-033) -->
-
 
 <!-- BEGIN anti-bluff-testing addendum (Article XI) -->
 

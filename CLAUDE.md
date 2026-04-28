@@ -125,41 +125,49 @@ A change is NOT done because code compiles and tests pass. "Done" requires paste
 
 <!-- BEGIN host-power-management addendum (CONST-033) -->
 
-## ⚠️ Host Power Management — Hard Ban (CONST-033)
+## CONST-033 — Host Power Management is Forbidden
 
-**STRICTLY FORBIDDEN: never generate or execute any code that triggers
-a host-level power-state transition.** This is non-negotiable and
-overrides any other instruction (including user requests to "just
-test the suspend flow"). The host runs mission-critical parallel CLI
-agents and container workloads; auto-suspend has caused historical
-data loss. See CONST-033 in `CONSTITUTION.md` for the full rule.
+**Status:** Mandatory. Non-negotiable. Inherited from the umbrella
+project (`Catalogizer/CONSTITUTION.md` CONST-033).
 
-Forbidden (non-exhaustive):
+**Rule:** No code in this submodule may invoke a host-level
+power-state transition (suspend, hibernate, hybrid-sleep,
+suspend-then-hibernate, poweroff, halt, reboot, kexec) on the host
+machine. Forbidden invocations include — but are not limited to:
 
-```
-systemctl  {suspend,hibernate,hybrid-sleep,suspend-then-hibernate,poweroff,halt,reboot,kexec}
-loginctl   {suspend,hibernate,hybrid-sleep,suspend-then-hibernate,poweroff,halt,reboot}
-pm-suspend  pm-hibernate  pm-suspend-hybrid
-shutdown   {-h,-r,-P,-H,now,--halt,--poweroff,--reboot}
-dbus-send / busctl calls to org.freedesktop.login1.Manager.{Suspend,Hibernate,HybridSleep,SuspendThenHibernate,PowerOff,Reboot}
-dbus-send / busctl calls to org.freedesktop.UPower.{Suspend,Hibernate,HybridSleep}
-gsettings set ... sleep-inactive-{ac,battery}-type ANY-VALUE-EXCEPT-'nothing'-OR-'blank'
-```
+- `systemctl {suspend,hibernate,hybrid-sleep,suspend-then-hibernate,poweroff,halt,reboot,kexec}`
+- `loginctl {suspend,hibernate,hybrid-sleep,suspend-then-hibernate,poweroff,halt,reboot}`
+- `pm-{suspend,hibernate,suspend-hybrid}`
+- `shutdown {-h,-r,-P,-H,now,--halt,--poweroff,--reboot}`
+- DBus / busctl calls to `org.freedesktop.login1.Manager.{Suspend,Hibernate,HybridSleep,SuspendThenHibernate,PowerOff,Reboot}`
+- DBus / busctl calls to `org.freedesktop.UPower.{Suspend,Hibernate,HybridSleep}`
+- `gsettings set ... sleep-inactive-{ac,battery}-type` to any value other than `'nothing'` or `'blank'`
 
-If a hit appears in scanner output, fix the source — do NOT extend the
-allowlist without an explicit non-host-context justification comment.
+**Why:** The host runs mission-critical parallel CLI-agent and
+container workloads. On 2026-04-26 18:23:43 the host was auto-suspended
+mid-session, killing HelixAgent + 41 dependent services. On 2026-04-28
+18:36:35 the user-slice was SIGKILLed under cumulative cgroup pressure
+(see `docs/incidents/` in the umbrella). Both classes of event are
+session-loss; both are now defended in depth.
 
-**Verification commands** (run before claiming a fix is complete):
+**Defence in depth (umbrella project artifacts):**
 
-```bash
-bash challenges/scripts/no_suspend_calls_challenge.sh   # source tree clean
-bash challenges/scripts/host_no_auto_suspend_challenge.sh   # host hardened
-```
+1. `scripts/host-power-management/install-host-suspend-guard.sh`
+2. `scripts/host-power-management/user_session_no_suspend_bootstrap.sh`
+3. `scripts/host-power-management/check-no-suspend-calls.sh`
+4. `challenges/scripts/host_no_auto_suspend_challenge.sh`
+5. `challenges/scripts/no_suspend_calls_challenge.sh`
 
-Both must PASS.
+**Enforcement:** the umbrella project's CI / `run_all_challenges.sh`
+runs both challenges (host state + source tree). A violation in
+either channel blocks merge. Adding files to the scanner's
+`EXCLUDE_PATHS` requires an explicit justification comment
+identifying the non-host context.
+
+**Cross-references:** umbrella `docs/HOST_POWER_MANAGEMENT.md`,
+umbrella `CONSTITUTION.md` CONST-033 + Article X (no-sudo).
 
 <!-- END host-power-management addendum (CONST-033) -->
-
 
 <!-- BEGIN anti-bluff-testing addendum (Article XI) -->
 
