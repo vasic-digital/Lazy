@@ -1,0 +1,8 @@
+# Lazy describe-Challenge bilingual fixture — English locale
+# Bundle format: simple flat key -> string map (no nesting).
+# Used by challenges/runner/main.go to back a real Translator against
+# the Lazy Service[T].Describe() output for anti-bluff round-trip
+# verification (CONST-035 / CONST-046 / CONST-050).
+lazy.service.uninitialized: "Service uninitialized"
+lazy.service.ready: "Service ready"
+lazy.service.failed: "Service failed"

@@ -1,0 +1,7 @@
+# Lazy describe-Challenge bilingual fixture — Serbian (Latin) locale
+# Bundle format: simple flat key -> string map (no nesting).
+# Proves CONST-046 compliance: non-English users see a localized
+# string, NOT the verbatim message ID.
+lazy.service.uninitialized: "Servis nije inicijalizovan"
+lazy.service.ready: "Servis spreman"
+lazy.service.failed: "Servis neuspeo"

@@ -1,4 +1,36 @@
-# Environment files
+# Environment files (CONST-042 / CONST-053)
 .env
 .env.local
 .env.*.local
+
+# Coverage + test artefacts (CONST-053)
+cover.out
+coverage.out
+*.coverprofile
+htmlcov/
+
+# Challenge runtime evidence directory — regenerated on every run
+challenges/.last-run/
+
+# Build artefacts (CONST-053)
+/bin/
+/build/
+/dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+*.test
+
+# OS / IDE personal state
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.orig
+*.rej
