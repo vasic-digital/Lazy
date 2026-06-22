@@ -31,10 +31,10 @@ Two concrete primitives wrap `sync.Once` so callers can defer expensive work (da
 Lazy is **project-not-aware** (CONST-051(B)). Consumers integrate via three seams:
 
 1. **Loader / init function** — closure that does the real work (open DB, dial gRPC, parse YAML, …). Returns `(T, error)`.
-2. **Optional `Translator` injection** — `Service[T].SetTranslator(tr)` lets the consumer route `Describe` output through its own i18n stack (HelixCode wires this to `helix_code/internal/i18nadapter`). The default `NoopTranslator` returns the message ID verbatim — safe for logs, **untranslated for end users** (production consumers MUST inject a real Translator per CONST-046).
+2. **Optional `Translator` injection** — `Service[T].SetTranslator(tr)` lets the consumer route `Describe` output through its own i18n stack (e.g. a consumer wires this to its own `internal/i18nadapter`). The default `NoopTranslator` returns the message ID verbatim — safe for logs, **untranslated for end users** (production consumers MUST inject a real Translator per CONST-046).
 3. **Context propagation** — `Describe(ctx)` accepts a `context.Context` so the consumer's `Translator` can read locale + request-scoped data from `ctx`.
 
-No reverse coupling: Lazy never reaches into a consumer's tree, never imports a project-specific package, never assumes a HelixCode-specific layout.
+No reverse coupling: Lazy never reaches into a consumer's tree, never imports a project-specific package, never assumes a project-specific layout.
 
 ---
 
@@ -109,7 +109,7 @@ svc := lazy.NewService(func() (*OllamaClient, error) {
     return NewOllamaClient(os.Getenv("OLLAMA_HOST"))
 })
 
-// Inject the consumer's real i18n stack (HelixCode example)
+// Inject the consumer's real i18n stack (consumer example)
 svc.SetTranslator(helixI18n.LazyAdapter(localizer))
 
 // Probe status without triggering init
