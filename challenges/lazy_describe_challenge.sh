@@ -57,7 +57,7 @@ SR_FIX="${SCRIPT_DIR}/fixtures/sr-Latn.yaml"
 [[ -s "${SR_FIX}" ]] || fail "missing or empty fixture: ${SR_FIX}"
 grep -q 'lazy.service.ready' "${EN_FIX}" || fail "en fixture missing lazy.service.ready"
 grep -q 'lazy.service.ready' "${SR_FIX}" || fail "sr-Latn fixture missing lazy.service.ready"
-printf 'fixtures OK: %s + %s\n' "${EN_FIX}" "${SR_FIX}" | tee "${EVIDENCE_DIR}/04-fixtures.log"
+printf 'fixtures OK: %s + %s\n' "${EN_FIX}" "${SR_FIX}" | tee "${EVIDENCE_DIR}/04-fixtures.log"  # bluff-scan: ok (evidence-echo of state already asserted by grep -q || fail above; set -e active)
 
 # ---------------------------------------------------------------------------
 # Step 4 -- runtime end-to-end: real Translator + real Service.Describe
