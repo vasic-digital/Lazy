@@ -25,7 +25,7 @@ A row may be `covered`, `planned`, or `n/a (out of scope for a library of this s
 | UI               | n/a      | —                                                                                                                | Lazy ships no UI. |
 | UX               | covered  | bilingual locale verification inside `challenges/lazy_describe_challenge.sh`                                     | UX dimension Lazy actually owns: does `Describe` output flip language when the Translator's locale flips. Asserted EN→SR transition. |
 | Challenges       | covered  | `challenges/lazy_describe_challenge.sh` (added round 199)                                                        | Incorporates the `vasic-digital/Challenges` pattern; captures stdout/stderr as wire evidence per §11.4.2; paired mutation per §1.1 / CONST-055 meta-test. |
-| HelixQA          | planned  | recommend: register Lazy as a target in HelixQA's autonomous QA bank                                             | HelixQA submodule (`HelixDevelopment/HelixQA`) is incorporated at HelixCode root per CONST-050; Lazy enrolment is a HelixCode-meta-repo task, not a Lazy-internal task. |
+| HelixQA          | planned  | recommend: register Lazy as a target in HelixQA's autonomous QA bank                                             | HelixQA submodule (`HelixDevelopment/HelixQA`) is incorporated at the parent project root per CONST-050; Lazy enrolment is a parent-meta-repo task, not a Lazy-internal task. |
 
 ---
 
